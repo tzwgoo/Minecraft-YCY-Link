@@ -1,0 +1,17 @@
+{
+  "yokonex_link.config.title": "YOKONEX-Link Configuration",
+  "yokonex_link.config.url": "WebSocket Server URL",
+  "yokonex_link.config.uid": "UID",
+  "yokonex_link.config.token": "Token",
+  "yokonex_link.config.connect": "Reconnect",
+  "yokonex_link.config.save": "Save Config",
+  "yokonex_link.config.test": "Test Connection",
+  "yokonex_link.config.enabled": "Enabled",
+  "yokonex_link.config.disabled": "Disabled",
+  "yokonex_link.config.status": "Connection Status",
+  "yokonex_link.config.status.disconnected": "Disconnected",
+  "yokonex_link.config.status.connected": "Connected",
+  "yokonex_link.config.status.logged_in": "Logged In",
+  "key.yokonex_link.open_config": "Open Config Screen",
+  "category.yokonex_link": "YOKONEX-Link"
+}

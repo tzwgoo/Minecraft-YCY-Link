@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.gradlew.bat genSources --refresh-dependencies)",
+      "Bash(./gradlew:*)",
+      "Bash(dir \"C:\\\\Program Files\\\\Java\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(unzip:*)",
+      "Bash(rm:*)",
+      "Bash(./gradlew.bat build --warning-mode all)",
+      "Bash(dir \"D:\\\\yokonex-link-template-1.20.1\\\\build\\\\libs\")",
+      "Bash(jar tf:*)",
+      "Bash(findstr:*)",
+      "Bash(./gradlew.bat:*)",
+      "Bash(dir:*)",
+      "Bash(jar xf:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}

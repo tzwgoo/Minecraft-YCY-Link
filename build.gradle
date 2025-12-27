@@ -1,0 +1,140 @@
+plugins {
+	id 'eclipse'
+	id 'maven-publish'
+	id 'net.minecraftforge.gradle' version '6.0.+'
+	id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+	id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+	mappings channel: 'parchment', version: project.parchment_version
+
+	// accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+	runs {
+		client {
+			workingDirectory project.file('run')
+			property 'forge.logging.markers', 'REGISTRIES'
+			property 'forge.logging.console.level', 'debug'
+			property 'forge.enabledGameTestNamespaces', project.mod_id
+			property 'mixin.env.remapRefMap', 'true'
+			property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
+			mods {
+				yokonex_link {
+					source sourceSets.main
+				}
+			}
+		}
+
+		server {
+			workingDirectory project.file('run')
+			property 'forge.logging.markers', 'REGISTRIES'
+			property 'forge.logging.console.level', 'debug'
+			property 'forge.enabledGameTestNamespaces', project.mod_id
+			property 'mixin.env.remapRefMap', 'true'
+			property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
+			mods {
+				yokonex_link {
+					source sourceSets.main
+				}
+			}
+		}
+	}
+}
+
+repositories {
+	maven {
+		name = 'ParchmentMC'
+		url = 'https://maven.parchmentmc.org'
+	}
+}
+
+dependencies {
+	minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+
+	// Java-WebSocket - use shadow to include
+	shadow("org.java-websocket:Java-WebSocket:1.5.4") {
+		exclude group: 'org.slf4j'  // Exclude slf4j, Forge already provides it
+	}
+}
+
+// Configure shadow jar
+shadowJar {
+	archiveClassifier = ''
+	configurations = [project.configurations.shadow]
+
+	// Relocate to avoid conflicts
+	relocate 'org.java_websocket', 'cn.cinian.libs.java_websocket'
+
+	// Exclude slf4j from being bundled
+	exclude 'org/slf4j/**'
+	exclude 'META-INF/maven/org.slf4j/**'
+
+	manifest {
+		attributes([
+			"Specification-Title"     : project.mod_id,
+			"Specification-Vendor"    : "cinian",
+			"Specification-Version"   : "1",
+			"Implementation-Title"    : project.name,
+			"Implementation-Version"  : archiveVersion.get(),
+			"Implementation-Vendor"   : "cinian",
+			"Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+		])
+	}
+
+	from("LICENSE") {
+		rename { "${it}_${project.base.archivesName.get()}" }
+	}
+}
+
+// Configure regular jar
+tasks.named('jar') {
+	archiveClassifier = 'slim'
+}
+
+// Make reobf use shadow jar
+reobf {
+	shadowJar {}
+}
+
+// Set build to depend on shadowJar
+tasks.named('build') {
+	dependsOn shadowJar
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}
+
+// Configure artifact for publishing
+artifacts {
+	archives shadowJar
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			artifact jar
+		}
+	}
+	repositories {
+		maven {
+			url = "file://${project.projectDir}/mcmodsrepo"
+		}
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}

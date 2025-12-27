@@ -1,0 +1,17 @@
+{
+  "yokonex_link.config.title": "YOKONEX-Link 配置",
+  "yokonex_link.config.url": "WebSocket 服务器地址",
+  "yokonex_link.config.uid": "UID",
+  "yokonex_link.config.token": "Token",
+  "yokonex_link.config.connect": "重新连接",
+  "yokonex_link.config.save": "保存配置",
+  "yokonex_link.config.test": "测试连接",
+  "yokonex_link.config.enabled": "已启用",
+  "yokonex_link.config.disabled": "已禁用",
+  "yokonex_link.config.status": "连接状态",
+  "yokonex_link.config.status.disconnected": "未连接",
+  "yokonex_link.config.status.connected": "已连接",
+  "yokonex_link.config.status.logged_in": "已登录",
+  "key.yokonex_link.open_config": "打开配置界面",
+  "category.yokonex_link": "役次元"
+}

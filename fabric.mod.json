@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "yokonex-link",
+  "version": "1.0.0",
+  "name": "YOKONEX-Link",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "Me!"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/yokonex-link/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "cn.cinian.YOKONEXLink"
+    ],
+    "client": [
+      "cn.cinian.YOKONEXLinkClient"
+    ]
+  },
+  "mixins": [
+    "yokonex-link.mixins.json",
+    {
+      "config": "yokonex-link.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": "\u003e\u003d0.18.4",
+    "minecraft": "~1.20.1",
+    "java": "\u003e\u003d17"
+  },
+  "recommends": {
+    "fabric-api": "*"
+  },
+  "jars": [
+    {
+      "file": "META-INF/jars/Java-WebSocket-1.5.4.jar"
+    }
+  ]
+}
