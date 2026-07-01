@@ -1,10 +1,7 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
-
 name: build
-on: [pull_request, push]
+on:
+  pull_request:
+  push:
 
 jobs:
   build:
@@ -17,8 +14,8 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'microsoft'
+          java-version: '17'
+          distribution: 'temurin'
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
@@ -26,5 +23,108 @@ jobs:
       - name: capture build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Artifacts
+          name: build-libs
           path: build/libs/
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: download build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: build-libs
+          path: release-assets
+      - name: publish github release
+        uses: actions/github-script@v7
+        env:
+          RELEASE_DIR: release-assets
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = context.ref.replace('refs/tags/', '');
+            const releaseDir = process.env.RELEASE_DIR;
+
+            // 只上传这次打包产出的文件，避免把目录结构或无关文件带进 release
+            const assetFiles = fs.readdirSync(releaseDir)
+              .map((name) => path.join(releaseDir, name))
+              .filter((file) => fs.statSync(file).isFile());
+
+            if (assetFiles.length === 0) {
+              core.setFailed(`未找到可上传的打包产物: ${releaseDir}`);
+              return;
+            }
+
+            let release;
+            try {
+              release = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag,
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+
+              // 先创建草稿 release，等资源都传完再发布，避免半成品暴露出去
+              release = await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: tag,
+                name: tag,
+                draft: true,
+                generate_release_notes: true,
+              });
+            }
+
+            const releaseId = release.data.id;
+            const existingAssets = await github.paginate(
+              github.rest.repos.listReleaseAssets,
+              {
+                owner,
+                repo,
+                release_id: releaseId,
+                per_page: 100,
+              }
+            );
+
+            for (const file of assetFiles) {
+              const assetName = path.basename(file);
+              const oldAsset = existingAssets.find((asset) => asset.name === assetName);
+
+              if (oldAsset) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: oldAsset.id,
+                });
+              }
+
+              const data = fs.readFileSync(file);
+              await github.request('POST {upload_url}', {
+                upload_url: release.data.upload_url,
+                headers: {
+                  'content-type': 'application/octet-stream',
+                  'content-length': data.length,
+                },
+                name: assetName,
+                data,
+              });
+            }
+
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: releaseId,
+              name: tag,
+              draft: false,
+            });
