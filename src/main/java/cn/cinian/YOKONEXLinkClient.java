@@ -9,6 +9,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = YOKONEXLink.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class YOKONEXLinkClient {
@@ -29,7 +30,9 @@ class ClientEventHandler {
 	@SubscribeEvent
 	public static void onKeyInput(InputEvent.Key event) {
 		Minecraft mc = Minecraft.getInstance();
-		if (ModKeyBindings.OPEN_CONFIG_KEY.consumeClick() && mc.screen == null) {
+
+		// 松开快捷键再打开界面，避免按键字符落进默认聚焦的输入框
+		if (event.getAction() == GLFW.GLFW_RELEASE && ModKeyBindings.OPEN_CONFIG_KEY.consumeClick() && mc.screen == null) {
 			mc.setScreen(new ConfigScreen(null));
 		}
 	}

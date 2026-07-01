@@ -13,6 +13,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ConfigScreen extends Screen {
+    private static final String[] EVENT_KEYS = {
+        "playerJoin", "playerLeave", "playerChat", "blockBreak", "blockPlace",
+        "blockAttack", "playerDeath", "playerDamage", "entityKilled", "itemUse"
+    };
+
+    private static final String[] EVENT_LABELS = {
+        "玩家加入", "玩家离开", "玩家聊天", "方块破坏", "方块放置",
+        "方块攻击", "玩家死亡", "玩家受伤", "击杀实体", "使用物品"
+    };
+
     private final Screen parent;
     private EditBox urlField;
     private EditBox uidField;
@@ -44,11 +54,14 @@ public class ConfigScreen extends Screen {
             initEventsPage();
         }
 
-        // 页面切换按钮（底部）
+        // 事件页把返回按钮放到顶部，避免小窗口时被底部内容挤住
+        int pageButtonWidth = currentPage == 0 ? 200 : 110;
+        int pageButtonX = currentPage == 0 ? this.width / 2 - 100 : 10;
+        int pageButtonY = currentPage == 0 ? this.height - 27 : 8;
         pageButton = Button.builder(
             Component.literal(currentPage == 0 ? "事件设置 →" : "← 连接设置"),
             button -> switchPage()
-        ).bounds(this.width / 2 - 100, this.height - 27, 200, 20).build();
+        ).bounds(pageButtonX, pageButtonY, pageButtonWidth, 20).build();
         addRenderableWidget(pageButton);
     }
 
@@ -111,41 +124,68 @@ public class ConfigScreen extends Screen {
     private void initEventsPage() {
         ModConfig config = ModConfig.getInstance();
         ModConfig.EventConfig events = config.getEvents();
+        eventButtons.clear();
 
         int centerX = this.width / 2;
         int startY = 30;
-        int buttonWidth = 300;
         int buttonHeight = 20;
-        int spacing = 22;
+        int spacing = 4;
+        boolean[] eventStates = {
+            events.playerJoin, events.playerLeave, events.playerChat, events.blockBreak, events.blockPlace,
+            events.blockAttack, events.playerDeath, events.playerDamage, events.entityKilled, events.itemUse
+        };
 
-        // 创建事件开关按钮
-        createEventButton("playerJoin", "玩家加入", events.playerJoin, centerX, startY, buttonWidth, buttonHeight);
-        createEventButton("playerLeave", "玩家离开", events.playerLeave, centerX, startY + spacing, buttonWidth, buttonHeight);
-        createEventButton("playerChat", "玩家聊天", events.playerChat, centerX, startY + spacing * 2, buttonWidth, buttonHeight);
-        createEventButton("blockBreak", "方块破坏", events.blockBreak, centerX, startY + spacing * 3, buttonWidth, buttonHeight);
-        createEventButton("blockPlace", "方块放置", events.blockPlace, centerX, startY + spacing * 4, buttonWidth, buttonHeight);
-        createEventButton("blockAttack", "方块攻击", events.blockAttack, centerX, startY + spacing * 5, buttonWidth, buttonHeight);
-        createEventButton("playerDeath", "玩家死亡", events.playerDeath, centerX, startY + spacing * 6, buttonWidth, buttonHeight);
-        createEventButton("playerDamage", "玩家受伤", events.playerDamage, centerX, startY + spacing * 7, buttonWidth, buttonHeight);
-        createEventButton("entityKilled", "击杀实体", events.entityKilled, centerX, startY + spacing * 8, buttonWidth, buttonHeight);
-        createEventButton("itemUse", "使用物品", events.itemUse, centerX, startY + spacing * 9, buttonWidth, buttonHeight);
+        // 窗口高度不够时切成双列，先保证事件项和返回按钮都能点到
+        int availableHeight = this.height - startY - 22;
+        int singleColumnRows = EVENT_KEYS.length + 1;
+        int singleColumnHeight = singleColumnRows * buttonHeight + (singleColumnRows - 1) * spacing;
+        boolean useDoubleColumn = singleColumnHeight > availableHeight && this.width >= 250;
+
+        int contentRows = useDoubleColumn ? (EVENT_KEYS.length + 1) / 2 : EVENT_KEYS.length;
+        int totalRows = contentRows + 1;
+        int totalHeight = totalRows * buttonHeight + (totalRows - 1) * spacing;
+        int layoutStartY = Math.max(startY, startY + (availableHeight - totalHeight) / 2);
+
+        if (useDoubleColumn) {
+            int columnGap = 10;
+            int buttonWidth = Math.max(120, Math.min(145, (this.width - 30 - columnGap) / 2));
+            int leftX = centerX - buttonWidth - columnGap / 2;
+            int rightX = centerX + columnGap / 2;
+
+            for (int i = 0; i < EVENT_KEYS.length; i++) {
+                int row = i / 2;
+                int x = i % 2 == 0 ? leftX : rightX;
+                int y = layoutStartY + row * (buttonHeight + spacing);
+                createEventButton(EVENT_KEYS[i], EVENT_LABELS[i], eventStates[i], x, y, buttonWidth, buttonHeight);
+            }
+        } else {
+            int buttonWidth = Math.min(300, this.width - 20);
+            int buttonX = centerX - buttonWidth / 2;
+
+            for (int i = 0; i < EVENT_KEYS.length; i++) {
+                int y = layoutStartY + i * (buttonHeight + spacing);
+                createEventButton(EVENT_KEYS[i], EVENT_LABELS[i], eventStates[i], buttonX, y, buttonWidth, buttonHeight);
+            }
+        }
 
         // 保存按钮
+        int saveButtonY = layoutStartY + contentRows * (buttonHeight + spacing);
+        int saveButtonWidth = Math.min(200, this.width - 20);
         Button saveEventsButton = Button.builder(
             Component.literal("保存事件设置"),
             button -> {
                 onSaveClick();
                 minecraft.setScreen(new ConfigScreen(parent));
             }
-        ).bounds(centerX - 100, startY + spacing * 10, 200, 20).build();
+        ).bounds(centerX - saveButtonWidth / 2, saveButtonY, saveButtonWidth, 20).build();
         addRenderableWidget(saveEventsButton);
     }
 
-    private void createEventButton(String eventKey, String displayName, boolean currentState, int centerX, int y, int width, int height) {
+    private void createEventButton(String eventKey, String displayName, boolean currentState, int x, int y, int width, int height) {
         Button button = Button.builder(
             Component.literal(displayName + ": " + (currentState ? "§a启用" : "§c禁用")),
             btn -> toggleEvent(eventKey)
-        ).bounds(centerX - width / 2, y, width, height).build();
+        ).bounds(x, y, width, height).build();
 
         eventButtons.put(eventKey, button);
         addRenderableWidget(button);
