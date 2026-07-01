@@ -110,14 +110,17 @@ jobs:
               }
 
               const data = fs.readFileSync(file);
-              await github.request('POST {upload_url}', {
-                upload_url: release.data.upload_url,
+              // 用固定 REST 路由上传资源，避免 upload_url 模板再次编码后变成非法地址
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: releaseId,
+                name: assetName,
+                data,
                 headers: {
                   'content-type': 'application/octet-stream',
                   'content-length': data.length,
                 },
-                name: assetName,
-                data,
               });
             }
 
